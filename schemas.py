@@ -1,48 +1,70 @@
 """
-Database Schemas
+Database Schemas for HealthLab App
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model corresponds to a MongoDB collection (lowercased class name).
 """
+from typing import Optional, List, Literal
+from pydantic import BaseModel, Field, EmailStr
+from datetime import datetime
 
-from pydantic import BaseModel, Field
-from typing import Optional
-
-# Example schemas (replace with your own):
 
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
     name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    email: EmailStr = Field(..., description="Email address")
+    phone: Optional[str] = Field(None, description="Phone number")
+    role: Literal["user", "doctor", "admin"] = Field("user")
+    pin: Optional[str] = Field(None, description="4-digit report access PIN")
+    is_active: bool = True
 
+
+class Test(BaseModel):
+    name: str
+    code: str = Field(..., description="Short code e.g., CBC, LFT")
+    category: str = Field("General")
+    price: float = Field(..., ge=0)
+    description: Optional[str] = None
+    preparation: Optional[str] = Field(None, description="Fasting etc.")
+
+
+class Booking(BaseModel):
+    user_id: str
+    test_code: str
+    scheduled_at: datetime
+    status: Literal["booked", "in_progress", "completed", "cancelled"] = "booked"
+    address: Optional[str] = None
+    payment_status: Literal["pending", "paid", "refunded"] = "pending"
+    notes: Optional[str] = None
+    promo_code: Optional[str] = None
+    discount_applied: Optional[float] = 0
+
+
+class Report(BaseModel):
+    booking_id: str
+    test_code: str
+    url: Optional[str] = Field(None, description="PDF or external URL")
+    summary: Optional[str] = None
+    values: Optional[dict] = None
+
+
+class Promo(BaseModel):
+    code: str
+    type: Literal["percent", "flat"] = "percent"
+    value: float = Field(..., ge=0)
+    active: bool = True
+    note: Optional[str] = None
+
+
+class Message(BaseModel):
+    user_id: str
+    role: Literal["user", "assistant"]
+    text: str
+    context: Optional[dict] = None
+
+
+# Optional reference examples (kept for viewer compatibility)
 class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+    title: str
+    description: Optional[str] = None
+    price: float
+    category: str
+    in_stock: bool = True
